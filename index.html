@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IoT Widget Pack - MVP v1.0</title>
+  <style>
+    :root {
+      --bg-color: #0b0f19;
+      --panel-bg: #131b2e;
+      --border-color: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      padding: 32px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    .dashboard-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 20px;
+      max-width: 1100px;
+    }
+
+    .widget-card {
+      background-color: var(--panel-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .widget-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 16px;
+    }
+
+    /* ESTILOS WIDGET PID CONTROLLER */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .slider-row label {
+      width: 40px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-cyan);
+    }
+    .slider-row input[type="range"] {
+      flex: 1;
+      accent-color: var(--accent-cyan);
+      cursor: pointer;
+    }
+    .slider-row span {
+      width: 35px;
+      text-align: right;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+
+    /* ESTILOS WIDGET STATUS & ALARMS */
+    .led-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .led-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0b0f19;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+    }
+    .led-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #334155;
+      box-shadow: 0 0 0px transparent;
+      transition: all 0.3s ease;
+    }
+    .led-dot.ok { background-color: var(--accent-emerald); box-shadow: 0 0 8px var(--accent-emerald); }
+    .led-dot.warn { background-color: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); }
+    .led-dot.crit { background-color: var(--accent-rose); box-shadow: 0 0 8px var(--accent-rose); }
+    
+    .status-log {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: #0b0f19;
+      padding: 8px;
+      border-radius: 6px;
+      height: 50px;
+      overflow-y: auto;
+    }
+
+    /* ESTILOS WIDGET BATTERY MONITOR */
+    .battery-bar-bg {
+      width: 100%;
+      height: 20px;
+      background: #0b0f19;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      margin-bottom: 12px;
+    }
+    .battery-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent-emerald);
+      transition: width 0.4s ease, background-color 0.4s ease;
+    }
+    .power-stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>IoT Widget Pack <span style="color: var(--accent-cyan);">[MVP v1.0]</span></h1>
+
+  <div class="dashboard-container">
+    <!-- WIDGET 1: Osciloscopio -->
+    <div class="widget-card">
+      <div class="widget-title">Sensor Waveform (Oscilloscope)</div>
+      <canvas id="oscCanvas" width="300" height="150" style="width:100%; height:auto; display:block;"></canvas>
+    </div>
+
+    <!-- WIDGET 2: Circular Gauge -->
+    <div class="widget-card">
+      <div class="widget-title">Motor Speed (RPM)</div>
+      <div style="text-align: center; position: relative; padding: 10px 0;">
+        <svg width="120" height="120" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="40" stroke="#1e293b" stroke-width="8" fill="none" />
+          <circle id="gaugeProgress" cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" fill="none"
+                  stroke-dasharray="251.2" stroke-dashoffset="60" stroke-linecap="round" 
+                  transform="rotate(-90 50 50)" style="transition: stroke-dashoffset 0.1s ease;" />
+        </svg>
+        <div id="gaugeValue" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: bold;">0</div>
+      </div>
+    </div>
+
+    <!-- WIDGET 3: PID / Parameter Control -->
+    <div class="widget-card">
+      <div class="widget-title">PID Parameters & Setpoint</div>
+      <div class="control-group">
+        <div class="slider-row">
+          <label>SP</label>
+          <input type="range" id="spRange" min="0" max="100" value="65">
+          <span id="spVal">65</span>
+        </div>
+        <div class="slider-row">
+          <label>Kp</label>
+          <input type="range" id="kpRange" min="0" max="10" step="0.1" value="2.5">
+          <span id="kpVal">2.5</span>
+        </div>
+        <div class="slider-row">
+          <label>Ki</label>
+          <input type="range" id="kiRange" min="0" max="5" step="0.05" value="0.4">
+          <span id="kiVal">0.4</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WIDGET 4: System Status & Alarm Panel -->
+    <div class="widget-card">
+      <div class="widget-title">System Status & Alarms</div>
+      <div class="led-grid">
+        <div class="led-item"><div class="led-dot ok" id="ledPower"></div> Power</div>
+        <div class="led-item"><div class="led-dot ok" id="ledComms"></div> Comms</div>
+        <div class="led-item"><div class="led-dot warn" id="ledTemp"></div> Temp</div>
+        <div class="led-item"><div class="led-dot ok" id="ledDriver"></div> Driver</div>
+      </div>
+      <div class="status-log" id="statusLog">> System started...<br>> Comms link established.</div>
+    </div>
+
+    <!-- WIDGET 5: Battery & Power Monitor -->
+    <div class="widget-card">
+      <div class="widget-title">Battery & Power Monitor</div>
+      <div class="battery-bar-bg">
+        <div class="battery-bar-fill" id="batFill"></div>
+      </div>
+      <div class="power-stats">
+        <span>Level: <strong id="batLevel">0%</strong></span>
+        <span>Draw: <strong id="powerDraw" style="color: var(--accent-cyan);">0 W</strong></span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // --- LÓGICA WIDGET 1: Osciloscopio ---
+    class RealtimeOscilloscope {
+      constructor(canvasId, maxDataPoints = 60) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.data = new Array(maxDataPoints).fill(0);
+        this.maxDataPoints = maxDataPoints;
+      }
+      update(newValue) {
+        this.data.push(newValue);
+        if (this.data.length > this.maxDataPoints) this.data.shift();
+        this.draw();
+      }
+      draw() {
+        const { ctx, canvas, data } = this;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1; ctx.beginPath();
+        for (let i = 0; i < canvas.width; i += 30) { ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); }
+        for (let j = 0; j < canvas.height; j += 30) { ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 2; ctx.beginPath();
+        const sliceWidth = canvas.width / (this.maxDataPoints - 1);
+        let x = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = data[i] / 100;
+          const y = canvas.height - (v * canvas.height);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          x += sliceWidth;
+        }
+        ctx.stroke();
+      }
+    }
+
+    // --- LÓGICA WIDGET 2: Circular Gauge ---
+    class CircularGauge {
+      constructor(progressElementId, textElementId, maxVal = 100) {
+        this.progressCircle = document.getElementById(progressElementId);
+        this.textElement = document.getElementById(textElementId);
+        this.maxVal = maxVal;
+        this.circumference = 2 * Math.PI * 40;
+      }
+      setValue(value) {
+        const clampedValue = Math.min(Math.max(value, 0), this.maxVal);
+        const offset = this.circumference - (clampedValue / this.maxVal) * this.circumference;
+        this.progressCircle.style.strokeDashoffset = offset;
+        this.textElement.textContent = Math.round(clampedValue);
+        this.progressCircle.style.stroke = clampedValue > 80 ? '#f43f5e' : '#10b981';
+      }
+    }
+
+    // --- LÓGICA WIDGET 3: PID Control (Event Listeners) ---
+    function setupPIDControl() {
+      ['sp', 'kp', 'ki'].forEach(param => {
+        const range = document.getElementById(`${param}Range`);
+        const valSpan = document.getElementById(`${param}Val`);
+        range.addEventListener('input', (e) => {
+          valSpan.textContent = e.target.value;
+        });
+      });
+    }
+
+    // --- LÓGICA WIDGET 5: Power Monitor ---
+    class PowerMonitor {
+      constructor(fillId, levelId, drawId) {
+        this.fill = document.getElementById(fillId);
+        this.level = document.getElementById(levelId);
+        this.draw = document.getElementById(drawId);
+      }
+      update(percent, watts) {
+        this.fill.style.width = `${percent}%`;
+        this.level.textContent = `${Math.round(percent)}%`;
+        this.draw.textContent = `${watts.toFixed(1)} W`;
+        
+        if (percent < 20) {
+          this.fill.style.backgroundColor = '#f43f5e';
+        } else if (percent < 45) {
+          this.fill.style.backgroundColor = '#f59e0b';
+        } else {
+          this.fill.style.backgroundColor = '#10b981';
+        }
+      }
+    }
+
+    // --- INICIALIZACIÓN Y SIMULACIÓN EN VIVO ---
+    const osc = new RealtimeOscilloscope('oscCanvas');
+    const gauge = new CircularGauge('gaugeProgress', 'gaugeValue', 100);
+    const power = new PowerMonitor('batFill', 'batLevel', 'powerDraw');
+    
+    setupPIDControl();
+
+    let step = 0;
+    let batteryLevel = 85;
+
+    setInterval(() => {
+      // Osciloscopio & Gauge
+      osc.update(50 + 35 * Math.sin(Date.now() / 200) + (Math.random() * 10 - 5));
+      gauge.setValue(50 + 40 * Math.sin(step += 0.1));
+
+      // Batería simulada con descarga lenta y fluctuación de potencia
+      batteryLevel = batteryLevel > 15 ? batteryLevel - 0.05 : 90;
+      const currentWatts = 12.5 + Math.random() * 3.5;
+      power.update(batteryLevel, currentWatts);
+    }, 100);
+
+  </script>
+</body>
+</html>
