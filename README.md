@@ -1,3 +1,5 @@
+> 🎮 **[Launch Live Interactive Demo](https://manuelveraromero.github.io/iot-widget-pack/)** | 📦 **[Download on Gumroad ($0+)](https://tu-usuario.gumroad.com/l/iot-widget-pack)**
+
 # IoT & Mechatronics Web Widget Pack ⚡ [v1.0]
 
 A high-performance, lightweight UI component library built for hardware engineers, robotics developers, and IoT makers. Designed with a clean **Dark Industrial / Cyberpunk** aesthetic, these widgets require zero heavy frameworks (pure HTML5, CSS3, and Vanilla JavaScript) and integrate seamlessly into any local or cloud telemetry dashboard.
